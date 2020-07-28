@@ -728,7 +728,7 @@ void GPSDriverAshtech::activateRTCMOutput()
 {
 	char buffer[40];
 	const char *rtcm_options[] = {
-		"$PASHS,NME,POS,%c,ON,0.2\r\n",  // reduce position updates to 5 Hz
+		"$PASHS,NME,POS,%c,ON,0.5\r\n",  // reduce position updates to 2 Hz
 
 		"$PASHS,RT3,1074,%c,ON,1\r\n", // GPS observations
 		"$PASHS,RT3,1084,%c,ON,1\r\n", // GLONASS observations
@@ -1057,7 +1057,7 @@ int GPSDriverAshtech::configure(unsigned &baudrate, OutputMode output_mode)
 
 	// Now configure the messages we want
 
-	const char update_rate[] = "$PASHS,POP,20\r\n"; // set internal update rate to 20 Hz
+	const char update_rate[] = "$PASHS,POP,2\r\n"; // set internal update rate to 2 Hz
 
 	if (writeAckedCommand(update_rate, sizeof(update_rate) - 1, ASH_RESPONSE_TIMEOUT) != 0) {
 		ASH_DEBUG("command %s failed", update_rate);
@@ -1092,7 +1092,7 @@ int GPSDriverAshtech::configure(unsigned &baudrate, OutputMode output_mode)
 		"$PASHS,OUT,%c,ON\r\n",         // enable periodic output
 		"$PASHS,NME,ZDA,%c,ON,3\r\n",   // enable ZDA (date & time) output every 3s
 		"$PASHS,NME,GST,%c,ON,3\r\n",   // position accuracy messages
-		"$PASHS,NME,POS,%c,ON,0.05\r\n",// position & velocity (we can go up to 20Hz if FW option [W] is given and to 50Hz if [8] is given)
+		"$PASHS,NME,POS,%c,ON,0.5\r\n",// position & velocity (we can go up to 20Hz if FW option [W] is given and to 50Hz if [8] is given)
 		"$PASHS,NME,GSV,%c,ON,1\r\n"    // satellite status
 	};
 
@@ -1107,7 +1107,7 @@ int GPSDriverAshtech::configure(unsigned &baudrate, OutputMode output_mode)
 
 	if (use_dual_mode) {
 		// enable heading output
-		const char heading_output[] = "$PASHS,NME,HDT,%c,ON,0.05\r\n";
+		const char heading_output[] = "$PASHS,NME,HDT,%c,ON,0.5\r\n";
 		int len = snprintf(buffer, sizeof(buffer), heading_output, _port);
 
 		if (writeAckedCommand(buffer, len, ASH_RESPONSE_TIMEOUT) != 0) {
