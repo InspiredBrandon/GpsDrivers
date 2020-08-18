@@ -47,8 +47,8 @@
 #define MIN(X,Y)	((X) < (Y) ? (X) : (Y))
 #define ASH_UNUSED(x) (void)x;
 
-//#define ASH_DEBUG(...)		{GPS_WARN(__VA_ARGS__);}
-#define ASH_DEBUG(...)		{/*GPS_WARN(__VA_ARGS__);*/}
+#define ASH_DEBUG(...)		{GPS_WARN(__VA_ARGS__);}
+//#define ASH_DEBUG(...)		{/*GPS_WARN(__VA_ARGS__);*/}
 
 GPSDriverAshtech::GPSDriverAshtech(GPSCallbackPtr callback, void *callback_user,
 				   sensor_gps_s *gps_position,
