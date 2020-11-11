@@ -69,6 +69,42 @@ private:
 		other
 	};
 
+	// Option descriptions are from the Trimble MB-Two GNSS OEM Reference Manual, Rev F, Dec 2019
+	enum class AshtechOption {
+		GEOFENCING_WW,			// Option ID @1	Worldwide enabled receiver
+		GEOFENCING_CHINA,		// Option ID @2	China-only enabled receiver
+		GEOFENCING_JAPAN		// Option ID @3	Japan-only enabled receiver
+		GEOFENCING_BRAZIL,		// Option ID @4	Brazil-only enabled receiver
+		GEOFENCING_N_AMERICA,	// Option ID @5	North-America-only enabled receiver
+		GEOFENCING_L_AMERICA,	// Option ID @6	Latin-America-only enabled receiver
+		GEOFENCING_RUSSIA,		// Option ID @7	Russia-only enabled receiver
+		GEOFENCING_INDIA,		// Option ID @8	India-only enabled receiver
+		GEOFENCING_TURKEY,		// Option ID @9	Turkey-only-enabled receiver
+
+		2HZ,		// Option ID 2	Enables output rate up to 2 Hz (for position/raw data)
+		5HZ,		// Option ID 5	Enables output rate up to 5 Hz (for position/raw data)
+		10HZ,		// Option ID 6	Enables output rate up to 10 Hz (for position/raw data)
+		20HZ,		// Option ID W	Enables output rate up to 20 Hz (for position/raw data)
+		50HZ,		// Option ID 8	Enables output rate up to 50 Hz (for position/raw data)
+
+		DUO,		// Option ID D	Allows use of dual-sensor mode
+
+		RTKROVER,	// Option ID J	Allows fixed RTK computaitons
+		RTKBASE,	// Option ID K	Enables the reciever to generate differential messages
+
+		BEIDOU,		// Option ID B	BEIDOU satellites tracking
+		GLONASS,	// Option ID G	GLONASS satellites tracking
+		GPS,		// Option ID N	GPS+SBAS+QZSS satellites tracking
+		GALILEO,	// Option ID O	GALILEO satellites tracking
+
+		L1TRACKING	// Option ID X	Enables L1 Tracking
+		L2TRACKING	// Option ID Y	Enables L2 Tracking
+
+		N			// Option ID -	Option is not installed
+
+	};
+
+
 	enum class NMEACommand {
 		Acked, // Command that returns a (N)Ack
 		PRT,   // port config
@@ -139,6 +175,18 @@ private:
 	satellite_info_s *_satellite_info {nullptr};
 
 	AshtechBoard _board{AshtechBoard::other}; /**< board we are connected to */
+
+	AshtechOption _geofence{AshtechOption::GEOFENCING_WW};
+	AshtechOption _output_rate{AshtechOption::2HZ};
+	AshtechOption _duo{AshtechOption::N};
+	AshtechOption _rtk{AshtechOption::RTKROVER};
+	AshtechOption _beidou{AshtechOption::N};
+	AshtechOption _glonass{AshtechOption::N};
+	AshtechOption _gps{AshtechOption::N};
+	AshtechOption _galileo{AshtechOption::N};
+	AshtechOption _l1tracking{AshtechOption::N};	
+	AshtechOption _l2tracking{AshtechOption::N};
+
 
 	NMEACommand _waiting_for_command;
 

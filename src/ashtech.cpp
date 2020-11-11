@@ -649,12 +649,96 @@ int GPSDriverAshtech::handleMessage(int len)
 			if (memcmp(_rx_buffer + 11, "MB2", 3) == 0) {
 				_board = AshtechBoard::trimble_mb_two;
 
+				if(memcmp(_rx_buffer + 42, "1", 1) == 0) {
+					_geofence = AshtechOption::GEOFENCING_WW;
+				} else if(memcmp(_rx_buffer + 43, "2", 1) == 0) {
+					_geofence = AshtechOption::GEOFENCING_CHINA;
+				} else if(memcmp(_rx_buffer + 44, "3", 1) == 0) {
+					_geofence = AshtechOption::GEOFENCING_JAPAN;
+				} else if(memcmp(_rx_buffer + 45, "4", 1) == 0) {
+					_geofence = AshtechOption::GEOFENCING_BRAZIL;
+				} else if(memcmp(_rx_buffer + 46, "5", 1) == 0) {
+					_geofence = AshtechOption::GEOFENCING_N_AMERICA;
+				} else if(memcmp(_rx_buffer + 47, "6", 1) == 0) {
+					_geofence = AshtechOption::GEOFENCING_L_AMERICA;
+				} else if(memcmp(_rx_buffer + 48, "7", 1) == 0) {
+					_geofence = AshtechOption::GEOFENCING_RUSSIA;
+				} else if(memcmp(_rx_buffer + 49, "8", 1) == 0) {
+					_geofence = AshtechOption::GEOFENCING_INDIA;
+				} else if(memcmp(_rx_buffer + 50, "9", 1) == 0) {
+					_geofence = AshtechOption::GEOFENCING_TURKEY;
+				}
+
+				ASH_DEBUG("Geofence: %i", (int)_geofence);
+
+				if(memcmp(_rx_buffer + 51, "N", 1) == 0) {
+					_gps = AshtechOption::GPS;
+				} else {
+					_gps = AshtechOption::N;
+				}
+				if(memcmp(_rx_buffer + 52, "G", 1) == 0) {
+					_glonass = AshtechOption::GLONASS;
+				} else {
+					_glonass = AshtechOption::N;
+				}
+				if(memcmp(_rx_buffer + 53, "O", 1) == 0) {
+					_galileo = AshtechOption::GALILEO;
+				} else {
+					_galileo = AshtechOption::N;
+				}
+				if(memcmp(_rx_buffer + 54, "B", 1) == 0) {
+					_beidou = AshtechOption::BEIDOU;
+				} else {
+					_beidou = AshtechOption::N;
+				}
+
+				ASH_DEBUG("Constilations: %i, %i, %i, %i", (int)_gps, (int)_glonass, (int)_galileo, (int)_beidou);
+
+				if(memcmp(_rx_buffer + 55, "X", 1) == 0) {
+					_l1tracking = AshtechOption::L1TRACKING;
+				} else {
+					_l1tracking = AshtechOption::N;
+				}
+				if(memcmp(_rx_buffer + 56, "Y", 1) == 0) {
+					_l2tracking = AshtechOption::L2TRACKING;
+				} else {
+					_l2tracking = AshtechOption::N;
+				}
+
+				ASH_DEBUG("Tracking: %i, %i", (int)_l1tracking, (int)_l2tracking);
+
+				if(memcmp(_rx_buffer + 58, "W", 1) == 0) {
+					_output_rate = AshtechOption::20HZ;
+				} else {
+					_output_rate = AshtechOption::2HZ;
+				}
+
+				ASH_DEBUG("Output Rate: %i", (int)_output_rate);
+				
+				if(memcmp(_rx_buffer + 60, "J", 1) == 0) {
+					_rtk = AshtechOption::RTKROVER;
+				} else {
+					_rtk = AshtechOption::RTKBASE;
+				}
+
+				ASH_DEBUG("RTK Mode: %i", (int)_rtk);
+
+				if(memcmp(_rx_buffer + 63, "D", 1) == 0) {
+					_duo = AshtechOption::DUO;
+				} else {
+					_duo = AshtechOption::N;
+				}
+
+				ASH_DEBUG("DUO: %i", (int)_duo);
+
+
 			} else {
 				_board = AshtechBoard::other;
 			}
 
 			ASH_DEBUG("Connected board: %i", (int)_board);
 		}
+
 
 	} else if (memcmp(_rx_buffer, "$PASHR,RECEIPT,", 15) == 0) {
 		// this is the response to $PASHS,POS,AVG,100
@@ -734,7 +818,7 @@ void GPSDriverAshtech::activateRTCMOutput()
 {
 	char buffer[40];
 	const char *rtcm_options[] = {
-		"$PASHS,NME,POS,%c,ON,0.2\r\n",  // reduce position updates to 5 Hz
+		"$PASHS,NME,POS,%c,ON,0.2\r\n", // reduce position updates to 5 Hz
 
 		"$PASHS,RT3,1074,%c,ON,1\r\n", // GPS observations
 		"$PASHS,RT3,1084,%c,ON,1\r\n", // GLONASS observations
@@ -753,6 +837,11 @@ void GPSDriverAshtech::activateRTCMOutput()
 		"$PASHS,RT3,1077,%c,ON,1\r\n",
 		"$PASHS,RT3,1087,%c,ON,1\r\n",
 	};
+
+	if (_output_rate == AshtechOption::2HZ) {
+		char *temp[] = {"$PASHS,NME,POS,%c,ON,0.5\r\n"} // reduce position updates to 2Hz
+		memcpy(rtcm_options, temp, strlen(temp)+1);
+	}
 
 	for (unsigned int conf_i = 0; conf_i < sizeof(rtcm_options) / sizeof(rtcm_options[0]); conf_i++) {
 		int str_len = snprintf(buffer, sizeof(buffer), rtcm_options[conf_i], _port);
@@ -1063,7 +1152,14 @@ int GPSDriverAshtech::configure(unsigned &baudrate, OutputMode output_mode)
 
 	// Now configure the messages we want
 
+
 	const char update_rate[] = "$PASHS,POP,20\r\n"; // set internal update rate to 20 Hz
+
+	if(_output_rate == AshtechOption::2HZ) {
+		char temp[] = "$PASHS,POP,2\r\n";
+		memcpy(update_rate, temp, strlen(temp)+1); // set internal update rate to 2 Hz
+	}
+
 
 	if (writeAckedCommand(update_rate, sizeof(update_rate) - 1, ASH_RESPONSE_TIMEOUT) != 0) {
 		ASH_DEBUG("command %s failed", update_rate);
@@ -1073,7 +1169,7 @@ int GPSDriverAshtech::configure(unsigned &baudrate, OutputMode output_mode)
 	// Enable dual antenna mode (2: both antennas are L1/L2 GNSS capable, flex mode, avoids the need to determine
 	// the baseline length through a prior calibration stage)
 	// Needs to be set before other commands
-	const bool use_dual_mode = output_mode == OutputMode::GPS && _board == AshtechBoard::trimble_mb_two;
+	const bool use_dual_mode = output_mode == OutputMode::GPS && _board == AshtechBoard::trimble_mb_two && _duo == AshtechOption::DUO;
 
 	if (use_dual_mode) {
 		ASH_DEBUG("Enabling DUO mode");
@@ -1092,15 +1188,20 @@ int GPSDriverAshtech::configure(unsigned &baudrate, OutputMode output_mode)
 	}
 
 	char buffer[40];
-	const char *config_options[] = {
+	const char *config_options[] = {	
+		"$PASHS,NME,POS,%c,ON,0.05\r\n",// position & velocity (we can go up to 20Hz if FW option [W] is given and to 50Hz if [8] is given)
 		"$PASHS,NME,ALL,%c,OFF\r\n",    // disable all NMEA and NMEA-Like Messages
 		"$PASHS,ATM,ALL,%c,OFF\r\n",    // disable all ATM (ATOM) Messages
 		"$PASHS,OUT,%c,ON\r\n",         // enable periodic output
 		"$PASHS,NME,ZDA,%c,ON,3\r\n",   // enable ZDA (date & time) output every 3s
 		"$PASHS,NME,GST,%c,ON,3\r\n",   // position accuracy messages
-		"$PASHS,NME,POS,%c,ON,0.05\r\n",// position & velocity (we can go up to 20Hz if FW option [W] is given and to 50Hz if [8] is given)
 		"$PASHS,NME,GSV,%c,ON,1\r\n"    // satellite status
 	};
+
+	if (_output_rate == AshtechOption::2HZ) {
+		char *temp[] = {"$PASHS,NME,POS,%c,ON,0.5\r\n"} // reduce position updates to 2Hz
+		memcpy(rtcm_options, temp, strlen(temp)+1);
+	}
 
 	for (unsigned int conf_i = 0; conf_i < sizeof(config_options) / sizeof(config_options[0]); conf_i++) {
 		int len = snprintf(buffer, sizeof(buffer), config_options[conf_i], _port);
@@ -1114,6 +1215,10 @@ int GPSDriverAshtech::configure(unsigned &baudrate, OutputMode output_mode)
 	if (use_dual_mode) {
 		// enable heading output
 		const char heading_output[] = "$PASHS,NME,HDT,%c,ON,0.05\r\n";
+		if (_output_rate == AshtechOption::2HZ){
+			temp[] = "$PASHS,NME,HDT,%c,ON,0.5\r\n";
+			memcpy(heading_output, temp, strlen(temp)+1);
+		}
 		int len = snprintf(buffer, sizeof(buffer), heading_output, _port);
 
 		if (writeAckedCommand(buffer, len, ASH_RESPONSE_TIMEOUT) != 0) {
